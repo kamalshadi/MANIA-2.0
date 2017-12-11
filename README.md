@@ -11,9 +11,10 @@ File **L4.csv** has the same structure seeding form __L1__
 # The list of subjects and their processing status
 
 **L is for Left hemisphere and R for right hemisphere**  
+
 | Subject | Release | Acquisition | Gender | Age | Probtrackx | MANIA | Note |  
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |  
-| 188145	|S1200	|Q12|	F |	31-35 |  N/A |   N/A |   N/A |
+| 188145	|S1200	|Q12|	F |	31-35 |  N/A | N/A | N/A |  
 | 192237	|S1200	|Q11|	F |	31-35 | Done | L Done | re-run for traget ROI 180 |  
 | 206323	|S1200	|Q12|	F |	31-35 | Done || re-run for traget ROI 180 |  
 | 206929	|S1200	|Q12|	M |	31-35 | Done | L Done | re-run for traget ROI 180 |  
