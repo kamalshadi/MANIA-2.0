@@ -2,6 +2,8 @@
 import numpy as num
 from pandas import HDFStore,DataFrame, read_hdf
 import pickle as pk
+from regDiff import TVRegDiff
+from scipy import interpolate
 
 def readS2R(fn = "strengthL1"):
     with open(fn) as f:
@@ -122,9 +124,25 @@ def create_store():
     hdf.put('sub/L1/c', a1, format='table', data_columns=True)
 
 def basic_results(sub):
-    with open(sub+'.res','rb') as f:
+    with open('../'+sub+'.res','rb') as f:
         D = pk.load(f)
     den = [xx[2] for xx in D]
     T = [xx[3] for xx in D]
     A = [xx[1] for xx in D]
     return (den[50:-50],A[50:-50],T[50:-50])
+
+def wideFlat(sub):
+    with open('../'+sub+'.res','rb') as f:
+        D = pk.load(f)
+    NET = [xx[0] for xx in D]
+
+
+
+def smoothers(sub):
+    d,a,t = basic_results(sub)
+    d = list(reversed(d))
+    t = list(reversed(t))
+    a = num.array(list(reversed(a)))
+    deriv_sm = TVRegDiff(100*a, 100, 10e10, dx=1, ep=1e-1, scale='small', plotflag=0,diagflag=False)
+    deriv_sm = abs(deriv_sm)
+    return (deriv_sm,d,a,t)
