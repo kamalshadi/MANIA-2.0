@@ -1,22 +1,23 @@
 # read matrix_seed_to_all_target
 import numpy as num
-from pandas import HDFStore,DataFrame, read_hdf
+from pandas import HDFStore,DataFrame, read_hdf, Series
 import pickle as pk
 from regDiff import TVRegDiff
 from scipy import interpolate
+from tqdm import tqdm
 
 def readS2R(fn = "strengthL1"):
     with open(fn) as f:
         for numSeeds,line in enumerate(f):
             if numSeeds == 0:
-                w = [int(xx) for xx in line.strip().split()]
+                w = [int(float(xx)) for xx in line.strip().split()]
                 numROIs = len(w)
             else:
                 pass
     Z = num.zeros((numSeeds+1,numROIs))
     with open(fn) as f:
         for i,line in enumerate(f):
-            w = [int(xx) for xx in line.strip().split()]
+            w = [int(float(xx)) for xx in line.strip().split()]
             Z[i,:] = w
     return Z
 
@@ -116,12 +117,37 @@ def sample_csv():
     num.savetxt("L1.csv", a, delimiter=",")
     num.savetxt("L4.csv", b, delimiter=",")
 
-def create_store():
+def create_store(sub):
     hdf =HDFStore('all.h5')
-    a1 = readS2R()
-    a2 = readS2R_L()
-    hdf.put('sub/L1/p', a2, format='table', data_columns=True)
-    hdf.put('sub/L1/c', a1, format='table', data_columns=True)
+    d = DataFrame(columns=['SUB','SEED','SEED ROI','TARGET ROI','HEMISPHERE','DISTANCE','STRENGTH','CAT1','CAT2','CAT3'])
+    for i in range(1,181):
+        LSfname = '../'+sub+'/out/L'+str(i)+'/matrix_seeds_to_all_targets'
+        LDfname = '../'+sub+'/out/L'+str(i)+'/matrix_seeds_to_all_targets_lengths'
+        RSfname = '../'+sub+'/out/R'+str(i)+'/matrix_seeds_to_all_targets'
+        RDfname = '../'+sub+'/out/R'+str(i)+'/matrix_seeds_to_all_targets_lengths'
+        ls = readS2R(LSfname)
+        rs = readS2R(RSfname)
+        ld = readS2R_L(LDfname)
+        rd = readS2R_L(RDfname)
+        numSeeds ,numROIs = ls.shape
+        for j in tqdm(range(numSeeds),total=numSeeds):
+            for q in range(numROIs):
+                tmp = Series([sub,j+1,i+1,q+1,'L',ld[j,q],ls[j,q],'','',''])
+                d = d.append(tmp,ignore_index=True)
+        # numSeeds ,numROIs = rs.shape
+        # for j in range(numSeeds):
+        #     for q in range(numROIs):
+        #         tmp = Series([sub,j+1,i+1,q+1,'R',rd[j,q],rs[j,q],'','',''])
+        #         d = d.append(tmp,ignore_index=True)
+        if i == 1: break
+    hdf.put(sub,d)
+
+
+
+    # a1 = readS2R()
+    # a2 = readS2R_L()
+    # hdf.put('sub/L1/p', a2, format='table', data_columns=True)
+    # hdf.put('sub/L1/c', a1, format='table', data_columns=True)
 
 def basic_results(sub):
     with open('../'+sub+'.res','rb') as f:
@@ -129,7 +155,8 @@ def basic_results(sub):
     den = [xx[2] for xx in D]
     T = [xx[3] for xx in D]
     A = [xx[1] for xx in D]
-    return (den[50:-50],A[50:-50],T[50:-50])
+    net = [xx[0] for xx in D]
+    return (den[50:-50],A[50:-50],T[50:-50],net[50:-50])
 
 def wideFlat(sub):
     with open('../'+sub+'.res','rb') as f:

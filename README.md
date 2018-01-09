@@ -46,7 +46,7 @@ File **L4.csv** has the same structure seeding form __L1__
 
 | Subject | Release | Acquisition | Gender | Age | Probtrackx | MANIA | Note |  
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |  
-| 188145	|S1200	|Q12|	F |	31-35 |   |  |  |  
+| 188145	|S1200	|Q12|	F |	31-35 |  Running |  |  |  
 | 192237	|S1200	|Q11|	F |	31-35 | Done | L Done | re-run for traget ROI 180 |  
 | 206323	|S1200	|Q12|	F |	31-35 | Done || re-run for traget ROI 180 |  
 | 206929	|S1200	|Q12|	M |	31-35 | Done | L Done | re-run for traget ROI 180 |  
@@ -55,14 +55,14 @@ File **L4.csv** has the same structure seeding form __L1__
 | 238033	|S1200	|Q09|	M |	31-35 | Done || re-run for traget ROI 180 |  
 | 248238	|S1200	|Q13|	F |	31-35 | Done ||re-run for traget ROI 180 |  
 | 325129	|S1200	|Q13|	M |	31-35 |  |  |  |  
-| 360030	|S1200	|Q13|	F |	31-35 | Running |  |  |  
-| 368753	|S1200	|Q12|	F |	31-35 | Running |  |  |  
-| 392447	|S1200	|Q07|	M |	31-35 | Running |  |  |  
-| 401422	|S1200	|Q08|	F |	31-35 | Running |  |  |   
-| 413934	|S1200	|Q09|F | 31-35 | Running |  |  |   
-| 421226	|S1200	|Q13|	M |	31-35 | Running |  |  |  
-| 453542	|S1200	|Q12|	F |	31-35 | Running |  |  |   
-| 454140	|S1200	|Q12|	M |	31-35 |  |  |  |   
-| 463040	|S1200	|Q13|	F |	31-35 |  |  |  |   
-| 468050	|S1200	|Q08|	F |	31-35 |  |  |  |   
-| 481042	|S1200	|Q12|	F |	31-35 |  |  |  |   
+| 360030	|S1200	|Q13|	F |	31-35 | Done |  |  |  
+| 368753	|S1200	|Q12|	F |	31-35 | Done |  |  |  
+| 392447	|S1200	|Q07|	M |	31-35 | Done |  |  |  
+| 401422	|S1200	|Q08|	F |	31-35 | Done |  |  |   
+| 413934	|S1200	|Q09|F | 31-35 | Done |  |  |   
+| 421226	|S1200	|Q13|	M |	31-35 | Done |  |  |  
+| 453542	|S1200	|Q12|	F |	31-35 | Done |  |  |   
+| 454140	|S1200	|Q12|	M |	31-35 | Running |  |  |   
+| 463040	|S1200	|Q13|	F |	31-35 | Running |  |  |   
+| 468050	|S1200	|Q08|	F |	31-35 | Running |  |  |   
+| 481042	|S1200	|Q12|	F |	31-35 | Running |  |  |   
