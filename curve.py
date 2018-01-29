@@ -1,9 +1,9 @@
 # Curve fitting for distance bias
 import numpy as num
 from scipy.optimize import curve_fit
-
 # N is number of bins
 # m is number of selected points per bin
+
 
 
 def func(x, a, b):
@@ -30,6 +30,104 @@ def isdig(a):
         return True
     except:
         return False
+
+def binit(x,ind,maxd=5,maxp = 10):
+    l = len(x)
+    if l==0:return
+    np = max(int(num.ceil(l*maxp/100)),1)
+    i1 = ind
+    i2 = ind
+    for i in range(1,l):
+        tmp1 = i1 - i
+        if tmp1 > 0 and (x[ind]-x[tmp1] <= maxd/2):
+            i1 = tmp1
+        else:
+            break
+    for i in range(1,l):
+        tmp2 = i2 + i
+        if tmp2 < l and (x[tmp2]-x[ind] <= maxd/2):
+            i2 = tmp2
+        else:
+            break
+    while True:
+        tmp = i2-i1+1
+        if tmp <= np:
+            break
+        else:
+            dis1 = x[ind] - x[i1]
+            dis2 = x[i2] - x[ind]
+            if dis1 > dis2:
+                i1 = i1+1
+            else:
+                i2 = i2-1
+    return [(i1,i2),(x[i1],x[i2])]
+
+
+
+def maxyout(x,y,bins):
+    tmp = [float("-inf")]*len(y)
+    np = 0
+    l = len(x)
+    for i,w in enumerate(x):
+        for cur_bin in bins:
+            if (w >= cur_bin[1][0] and w <= cur_bin[1][1]):
+                break
+        else:
+            np = np + 1
+            tmp[i] = y[i]
+    if max(tmp) < 0:
+        return
+    if np < .2*l:
+        flag=True
+    else:
+        flag = False
+    return (num.argmax(tmp),flag)
+
+
+def maxBin(x,y,N,m=1):
+    z = zip(x,y)
+    z = sorted(z)
+    run = True
+    if len(z) < N*m: # minimum number of points
+        outs = [(xx,i) for i,xx in enumerate(z)]
+        bins =[]
+        run = False
+        # return ([(xx,i) for i,xx in enumerate(z)],[])
+    if run:
+        x = [xx[0] for xx in z]
+        y = [xx[1] for xx in z]
+        outs = [] # output points
+        bins =[]
+        stopping = False
+        flag = False
+    while run:
+        ind,flag = maxyout(x,y,bins) # get the maximum outside current bins
+        if ind is None:
+            break
+        outs.append((z[ind],ind))
+        # ind = num.argmax(y)
+        cur_bin = binit(x,ind)
+        bins.append(cur_bin)
+        if (len(bins) >= N and flag):
+            stopping=True
+        if stopping: # see if K bins are formed
+            break
+    at = [xx[0][0] for xx in outs]
+    bt = [xx[0][1] for xx in outs]
+    popt, pcov = curve_fit(func, at, bt,maxfev = 10000)
+    # a = sorted(list(set(a)))
+    z = [func(xx,*popt) for xx in at]
+    D = {}
+    D['x'] = at
+    D['y'] = bt
+    D['z'] = z
+    D['outs'] = outs
+    D['bins'] = bins
+    return D
+
+
+
+
 
 def binCollapse(x,y,N,m):
     # Generate bins
@@ -105,7 +203,11 @@ def binCollapse(x,y,N,m):
     D["bins"] = bins
     return D
 
-# a = [1,4,3,5,7,4]
+# a = [1,5.6,6,7,7,8,9,11,11,12.5,13,13.2,13.3,24,24,31,31.2,34,41,51.1,51.2]
+# b = [10,43,60,17,98,80,91,1,2,12.5,13,13.2,13.3,24,24,31,31.2,34,41,51.1,51.2]
+# outs,bins = maxBin(a,b,10)
+# print(outs)
+# print(bins)
 # b=[0,2,21,3,-1,2]
 # D = binCollapse(a,b,3,2)
 # print(D)
