@@ -125,6 +125,63 @@ def maxBin(x,y,N,m=1):
     D['bins'] = bins
     return D
 
+def maxBin2(x,y,N,m=1):
+    wp = 0.1 # KNN
+    maxd = 5 #mm maximim distance
+    z = zip(x,y)
+    z = sorted(z)
+    run = True
+    if len(z) < N*m: # minimum number of points
+        outs = [(xx,i) for i,xx in enumerate(z)]
+        bins =[]
+        run = False
+        # return ([(xx,i) for i,xx in enumerate(z)],[])
+    if run:
+        x = [xx[0] for xx in z]
+        y = [xx[1] for xx in z]
+        outs = [] # output points
+        bins =[]
+        stopping = False
+        flag = False
+        l = len(x)
+        w = int(num.ceil(l*wp))
+        tail = False
+        for i,cur in enumerate(x):
+            bini = i + w + 1
+            bini2 = int(i + w/4)
+            if bini2 > l:
+                break
+            if bini>l:
+                bini = l
+            dmax = float(x[i]*15.0/100)+maxd
+            if (x[bini-1] - x[i]>dmax):
+                if num.max(y[i:l]) == y[i]:
+                    outs.append([(cur,y[i]),(i,bini-1)])
+                    cur_bin = (cur,x[bini-1])
+                    bins.append(cur_bin)
+                continue
+            if num.max(y[i:bini]) == y[i]:
+                outs.append([(cur,y[i]),(i,bini-1)])
+                cur_bin = (cur,x[bini-1])
+                bins.append(cur_bin)
+
+    at = [xx[0][0] for xx in outs]
+    bt = [xx[0][1] for xx in outs]
+    popt, pcov = curve_fit(func, at, bt,maxfev = 10000)
+    # a = sorted(list(set(a)))
+    z = [func(xx,*popt) for xx in at]
+    residuals = [(bt[q] - z[q])**2 for q in range(len(z))]
+    ss_res = num.sum(residuals)
+    ss_tot = num.sum((num.array(bt)-num.mean(bt))**2)
+    r_squared = 1 - (ss_res / ss_tot)
+    D = {}
+    D['x'] = at
+    D['y'] = bt
+    D['z'] = z
+    D['outs'] = outs
+    D['bins'] = bins
+    D['r'] = num.ceil(r_squared*100)
+    return D
 
 
 
