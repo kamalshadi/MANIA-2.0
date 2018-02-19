@@ -1,13 +1,18 @@
 # Curve fitting for distance bias
 import numpy as num
 from scipy.optimize import curve_fit
+from sklearn.linear_model import TheilSenRegressor
 # N is number of bins
 # m is number of selected points per bin
 
+from bokeh.plotting import output_notebook,figure, show
+from bokeh.layouts import row,column,gridplot
+from bokeh.models import Label
 
+estimator = TheilSenRegressor(random_state=42)
 
 def func(x, a, b):
-    return a + b*x
+    return a*x + b
 
 def upit(a,w,h = None):
     if h:
@@ -183,6 +188,7 @@ def maxBin2(x,y,N,m=1):
     D['r'] = num.ceil(r_squared*100)
     return D
 
+# softmax
 def maxBin3(x,y,N,m=1):
     wp = 0.1 # KNN
     maxd = 5 #mm maximim distance
@@ -205,6 +211,8 @@ def maxBin3(x,y,N,m=1):
         w = int(num.ceil(l*wp))
         tail = False
         for i,cur in enumerate(x):
+            if i >= (l - 3):
+                break
             ql = y[i:]
             ax = num.percentile(ql,95)
             if y[i] >= ax:
@@ -213,7 +221,13 @@ def maxBin3(x,y,N,m=1):
                 bins.append(cur_bin)
 
     at = [xx[0][0] for xx in outs]
+    alo = num.array(at)
+    alo = alo.reshape(-1,1)
     bt = [xx[0][1] for xx in outs]
+    blo = num.array(bt)
+    blo = blo.reshape(-1,1)
+    estimator.fit(alo, blo)
+    z_pred = estimator.predict(alo)
     popt, pcov = curve_fit(func, at, bt,maxfev = 10000)
     # a = sorted(list(set(a)))
     z = [func(xx,*popt) for xx in at]
@@ -222,16 +236,127 @@ def maxBin3(x,y,N,m=1):
     ss_tot = num.sum((num.array(bt)-num.mean(bt))**2)
     r_squared = 1 - (ss_res / ss_tot)
     D = {}
+    D['params'] = popt
     D['x'] = at
     D['y'] = bt
     D['z'] = z
+    D['z_pred'] = z_pred
     D['outs'] = outs
     D['bins'] = bins
     D['r'] = num.ceil(r_squared*100)
     return D
 
 
+# hard max
+def maxBin4(x,y,N,m=1):
+    z = zip(x,y)
+    z = sorted(z)
+    run = True
+    if len(z) < N*m: # minimum number of points
+        outs = [(xx,i) for i,xx in enumerate(z)]
+        bins =[]
+        run = False
+        # return ([(xx,i) for i,xx in enumerate(z)],[])
+    elit = 1
+    if run:
+        q = 0
+        while True:
+            x = [xx[0] for xx in z]
+            y = [xx[1] for xx in z]
+            outs = [] # output points
+            bins =[]
+            stopping = False
+            flag = False
+            l = len(x)
+            # w = int(num.ceil(l*wp))
+            tail = False
+            for i,cur in enumerate(x):
+                if i >= (l - 3):
+                    break
+                ql = y[i:]
+                tmp = 100 - q*elit
+                ax = num.percentile(ql,tmp)
+                if y[i] >= ax:
+                    outs.append([(cur,y[i]),(i,l-1)])
+                    cur_bin = (cur,x[-1])
+                    bins.append(cur_bin)
+            q = q + 1
+            if len(bins)>= 5:
+                break
 
+    at = [xx[0][0] for xx in outs]
+    # alo = num.array(at)
+    # alo = alo.reshape(-1, 1)
+    bt = [xx[0][1] for xx in outs]
+    # blo = num.array(bt)
+    # blo = blo.reshape(-1, 1)
+    # estimator.fit(alo, blo)
+    # z_pred = estimator.predict(alo)
+    popt, pcov = curve_fit(func, at, bt,maxfev = 10000)
+    # a = sorted(list(set(a)))
+    z = [func(xx,*popt) for xx in at]
+    residuals = [(bt[q] - z[q])**2 for q in range(len(z))]
+    ss_res = num.sum(residuals)
+    ss_tot = num.sum((num.array(bt)-num.mean(bt))**2)
+    r_squared = 1 - (ss_res / ss_tot)
+    D = {}
+    D['params'] = popt
+    D['x'] = at
+    D['y'] = bt
+    D['z'] = z
+    D['popt'] = popt
+    # D['z_pred'] = z_pred
+    D['outs'] = outs
+    D['bins'] = bins
+    D['r'] = num.ceil(r_squared*100)
+    return D
+
+
+def regress(a,b, tit = ''):
+    c = sorted(zip(a,b))
+    d = [xx for xx in c if (xx[1]>100 and xx[0]>1)]
+    a = [xx[0] for xx in d]
+    b = [num.log(xx[1]) for xx in d]
+    D = maxBin4(a,b,10)
+    # D1 = maxBin3(a,b,10)
+    outs = D['outs']
+    bins = D['bins']
+    _intercept = D['popt'][1] - num.log(5000)
+    intercept = "{:5.2f}".format(_intercept)
+    slope = num.ceil(-100*D['popt'][0])
+    params = 'intercept ='+str(intercept)+' , '+'slope = '+str(slope)+'%'
+    # normalize function
+    fn = lambda x : x - num.log(5000)
+    # outs1 = D1['outs']
+    # bins1 = D1['bins']
+    l = len(outs)
+    # l1 = len(outs1)
+    title = tit+'(R2%='+str(D['r'])+','+params+')'
+    p1 = figure(plot_width=500, plot_height=500, title = title,y_axis_label = "Probability(log scale)",x_axis_label = "Distance")
+    p1.circle(a,list(map(fn,b)))
+    p1.line(D['x'],list(map(fn,D['z'])),legend="Max",color="red")
+#     p1.line(D1['x'],D1['z'],legend="Soft-Max",color="blue")
+#     p1.line(D1['x'],D1['z_pred'],legend="thiel-soft-Max",color="black")
+#     p1.line(D['x'],D['z_pred'],legend="thiel-Max",color="cyan")
+# #     p1.line(D['cxw'],D['czw'],legend="Donahue - weighted regression",color="blue")
+    for i in range(l):
+            p1.circle_cross(outs[i][0][0],fn(outs[i][0][1]),color='green',size=8)
+    # for i in range(l1):
+    #     p1.square(outs1[i][0][0],outs1[i][0][1],color='yellow',size=4,alpha=.8)
+    return p1
+
+def regress_noplot(a,b, tit = ''):
+    c = sorted(zip(a,b))
+    d = [xx for xx in c if (xx[1]>100 and xx[0]>1)]
+    a = [xx[0] for xx in d]
+    b = [num.log(xx[1]) for xx in d]
+    D = maxBin4(a,b,10)
+    # D1 = maxBin3(a,b,10)
+    outs = D['outs']
+    bins = D['bins']
+    intercept = D['popt'][1] - num.log(5000)
+    slope = num.ceil(-100*D['popt'][0])
+    return {"intercept":intercept,"slope":slope,"r":D['r']}
 
 def binCollapse(x,y,N,m):
     # Generate bins
@@ -289,6 +414,7 @@ def binCollapse(x,y,N,m):
     popt2, pcov2 = curve_fit(func, a, b,maxfev = 10000)
     a = sorted(list(set(a)))
     z = [func(xx,*popt2) for xx in a]
+    D['param'] = popt2
     D['cx'] = sorted(a)
     D['cz'] = z
 
@@ -306,6 +432,45 @@ def binCollapse(x,y,N,m):
 
     D["bins"] = bins
     return D
+
+
+# hard max
+def correct(x,y,N,m=1):
+
+    run = True
+    # if len(y) < N*m: # minimum number of points
+    #     return (x,[num.log(max(xx,1)) for i,xx in enumerate(z)])
+
+
+    elit = 1
+    q = 0
+
+    while True:
+        outs = [] # output points
+        l = len(x)
+        tail = False
+        for i,cur in enumerate(x):
+            if i >= (l - 3):
+                break
+            ql = y[i:]
+
+            tmp = 100 - q*elit
+            ax = num.percentile(ql,tmp)
+            if y[i] >= ax:
+                outs.append([(cur,y[i]),(i,l-1)])
+
+        q = q + 1
+        if len(outs)>= 5:
+            break
+
+    at = [xx[0][0] for xx in outs]
+    bt = [num.log(xx[0][1]) for xx in outs]
+    popt, pcov = curve_fit(func, at, bt,maxfev = 10000)
+    # a = sorted(list(set(a)))
+    y = [num.log(xx) for xx in y]
+    zf = zip(x,y)
+    tmp = [xx[1]-popt[1]*xx[0] for xx in zf]
+    return tmp
 
 # a = [1,5.6,6,7,7,8,9,11,11,12.5,13,13.2,13.3,24,24,31,31.2,34,41,51.1,51.2]
 # b = [10,43,60,17,98,80,91,1,2,12.5,13,13.2,13.3,24,24,31,31.2,34,41,51.1,51.2]
