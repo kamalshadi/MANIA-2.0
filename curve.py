@@ -345,18 +345,80 @@ def regress(a,b, tit = ''):
     #     p1.square(outs1[i][0][0],outs1[i][0][1],color='yellow',size=4,alpha=.8)
     return p1
 
+max_nos = 5000    # probtrackx run parameter
+noise_floor = num.log(100.0/max_nos)
+min_r2 = 80
+min_envelope_points = 5
+min_points_on_right = 5
+
+def pre_mania2(x,y):
+
+    D = {} # regression model
+    D['isSuccess'] = False
+    D['reason'] = None
+    D['popt'] = [0.0,0.0] # regression parameters
+    D['slope'] = 0.0
+    D['intercept'] = 0
+    D['envelope'] = [] # envelope points
+    D['r2'] = 0.0
+    D['x'] = []
+    D['z'] = []
+
+    outs = [] # output points
+    stopping = False
+    l = len(x)
+    # w = int(num.ceil(l*wp))
+    tail = False
+    for i,cur in enumerate(x):
+        if i >= (l - min_points_on_right):
+            break
+        if y[i] <= noise_floor:
+            continue
+        ql = y[(i+1):]
+        ax = num.max(ql)
+        if y[i] >= ax:
+            outs.append((cur,y[i]))
+
+    D['envelope'] = outs
+
+    if (len(outs) < min_envelope_points ):
+        D['reason'] = 'envelope'
+        return D
+
+    at = [xx[0] for xx in outs]
+    D['x'] = at
+    bt = [xx[1] for xx in outs]
+
+    popt, pcov = curve_fit(func, at, bt,maxfev = 10000)
+    D['popt'] = popt
+    # a = sorted(list(set(a)))
+    z = [func(xx,*popt) for xx in at]
+    D['z'] = z
+    residuals = [(bt[q] - z[q])**2 for q in range(len(z))]
+    ss_res = num.sum(residuals)
+    ss_tot = num.sum((num.array(bt)-num.mean(bt))**2)
+    r_squared = 1 - (ss_res / ss_tot)
+    r_squared = r_squared * 100
+    D['r2'] = r_squared
+    if (r_squared <= min_r2):
+        D['reason'] = 'r2'
+        return D
+    D['isSuccess'] = True
+    D['intercept'] = popt[1]
+    D['slope'] = -100*popt[0]
+    return D
+
 def regress_noplot(a,b, tit = ''):
+    b [b==0] = 1 # for numerical purposes (log argumanet must be nonzero)
+    b = num.log(b/max_nos)
     c = sorted(zip(a,b))
-    d = [xx for xx in c if (xx[1]>100 and xx[0]>1)]
-    a = [xx[0] for xx in d]
-    b = [num.log(xx[1]) for xx in d]
-    D = maxBin4(a,b,10)
+    a = [xx[0] for xx in c]
+    b = [xx[1] for xx in c]
+    D = pre_mania2(a,b)
+    D['a'] = a
+    D['b'] = b
     # D1 = maxBin3(a,b,10)
-    outs = D['outs']
-    bins = D['bins']
-    intercept = D['popt'][1] - num.log(5000)
-    slope = num.ceil(-100*D['popt'][0])
-    return {"intercept":intercept,"slope":slope,"r":D['r']}
+    return D
 
 def binCollapse(x,y,N,m):
     # Generate bins
