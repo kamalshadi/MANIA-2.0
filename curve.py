@@ -346,7 +346,7 @@ def regress(a,b, tit = ''):
     return p1
 
 max_nos = 5000    # probtrackx run parameter
-noise_floor = num.log(100.0/max_nos)
+noise_floor = num.log(20.0/max_nos)
 min_r2 = 80
 min_envelope_points = 5
 min_points_on_right = 5
