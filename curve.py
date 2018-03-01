@@ -408,6 +408,28 @@ def pre_mania2(x,y):
     D['slope'] = -100*popt[0]
     return D
 
+def lslinear(x,y):
+    D = {}
+    w = sorted(zip(x,y))
+    x = [xx[0] for xx in w]
+    y = [xx[1] for xx in w]
+    D['x'] = x
+    D['y'] = y
+    popt, pcov = curve_fit(func, x, y,maxfev = 10000)
+    D['popt'] = popt
+    # a = sorted(list(set(a)))
+    z = [func(xx,*popt) for xx in x]
+    D['z'] = z
+    residuals = [(y[q] - z[q])**2 for q in range(len(z))]
+    ss_res = num.sum(residuals)
+    ss_tot = num.sum((num.array(y)-num.mean(y))**2)
+    r_squared = 1 - (ss_res / ss_tot)
+    r_squared = r_squared * 100
+    D['r2'] = r_squared
+    D['intercept'] = popt[1]
+    D['slope'] = -100*popt[0]
+    return D
+
 def regress_noplot(a,b, tit = ''):
     b [b==0] = 1 # for numerical purposes (log argumanet must be nonzero)
     b = num.log(b/max_nos)
